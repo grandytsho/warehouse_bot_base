@@ -4,6 +4,8 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
+from launch.actions import RegisterEventHandler, TimerAction
+from launch.event_handlers import OnProcessStart
 import xacro
 
 def generate_launch_description():
@@ -34,8 +36,14 @@ def generate_launch_description():
     spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
-        arguments=['-topic', 'robot_description', '-name', 'my_bot', '-z', '0.1'],
-        output='screen'
+        output='screen',
+        arguments=[
+            '-name', 'my_bot', 
+            '-topic', 'robot_description',
+            '-x', '0.0',
+            '-y', '0.0',
+            '-z', '0.1',
+        ]
     )
 
     # 4. Bridge
@@ -65,10 +73,36 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Replace your spawner nodes with:
+    joint_state_broadcaster_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["joint_state_broadcaster", "--controller-manager-timeout", "60"],
+    )
+
+    mecanum_drive_controller_spawner = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=joint_state_broadcaster_spawner,
+            on_start=[
+                TimerAction(
+                    period=2.0,
+                    actions=[Node(
+                        package="controller_manager",
+                        executable="spawner",
+                        arguments=["mecanum_drive_controller",
+                                "--controller-manager-timeout", "60"],
+                    )]
+                )
+            ]
+        )
+    )
+
     return LaunchDescription([
         node_robot_state_publisher,
         gazebo,
         spawn_entity,
         bridge,
-        rviz
+        rviz,
+        joint_state_broadcaster_spawner,
+        mecanum_drive_controller_spawner,
     ])

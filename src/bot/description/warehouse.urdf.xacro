@@ -3,15 +3,71 @@
        xmlns:xacro="http://www.ros.org/wiki/xacro"
        xmlns:ignition="https://ignitionrobotics.org">
        
-  <xacro:include filename="gazebo_controller.xacro"/>
+  <ros2_control name="IgnitionSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    
+    <joint name="front_left_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="front_right_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="back_left_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="back_right_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <gazebo>
+    <plugin filename="libign_ros2_control-system.so"
+            name="ign_ros2_control::IgnitionROS2ControlPlugin">
+      <parameters>$(find bot)/config/controller.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+  <!-- Base footprint -->
+  <link name="base_footprint"/>
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
   <link name="base_link">
     <inertial>
-      <origin xyz="0.035974 0.020083 6.2148E-05" rpy="0 0 0" />
+      <origin xyz="0.035974 0.020083 6.2148E-05" rpy="0 0 3.14156" />
       <mass value="6.4539" />
       <inertia ixx="0.12648" ixy="-0.0035153" ixz="0.00014021" iyy="0.34337" iyz="-3.3279E-05" izz="0.25605" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 3.14159" />
       <geometry>
         <mesh filename="file://$(find bot)/meshes/base_link.STL" />
       </geometry>
@@ -27,6 +83,57 @@
     </collision>
   </link>
 
+  <!-- Lidar link -->
+  <link name="lidar_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.05"/>
+      </geometry>
+      <material name=""><color rgba="0.1 0.1 0.1 1" /></material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.05" length="0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="0 0 0.15" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <always_on>true</always_on>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <topic>/scan</topic>
+      <ignition_frame_id>lidar_link</ignition_frame_id>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>360</samples>
+            <resolution>1.0</resolution>
+            <min_angle>-3.14159</min_angle>
+            <max_angle>3.14159</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.15</min>
+          <max>12.0</max>
+          <resolution>0.01</resolution>
+        </range>
+      </ray>
+    </sensor>
+  </gazebo>
+
+  <!-- Front Right Wheel -->
   <link name="front_right_wheel">
     <inertial>
       <origin xyz="5.5722E-07 1.3698E-07 0.02407" rpy="0 0 0" />
@@ -54,6 +161,7 @@
     <axis xyz="0 1 0" />
   </joint>
 
+  <!-- Front Left Wheel -->
   <link name="front_left_wheel">
     <inertial>
       <origin xyz="5.57590506100603E-07 1.37181806303399E-07 -0.0233700493804863" rpy="0 0 0" />
@@ -81,6 +189,7 @@
     <axis xyz="0 1 0" />
   </joint>
 
+  <!-- Back Left Wheel -->
   <link name="back_left_wheel">
     <inertial>
       <origin xyz="5.5731E-07 1.366E-07 0.02407" rpy="0 0 0" />
@@ -108,6 +217,7 @@
     <axis xyz="0 1 0" />
   </joint>
 
+  <!-- Back Right Wheel -->
   <link name="back_right_wheel">
     <inertial>
       <origin xyz="5.58348600632197E-07 1.3626034917058E-07 -0.0233700496011711" rpy="0 0 0" />
@@ -135,21 +245,22 @@
     <axis xyz="0 1 0" />
   </joint>
 
+  <!-- Wheel friction properties -->
   <gazebo reference="front_left_wheel">
     <collision>
       <surface>
         <friction>
           <ode>
-            <mu>5.0</mu>
-            <mu2>0.0</mu2>
-            <fdir1 ignition:expressed_in="base_link">1 -1 0</fdir1>
+            <mu>1.0</mu>
+            <mu2>0.2</mu2>
+            <fdir1 ignition:expressed_in="base_footprint">1 -1 0</fdir1>
             <slip1>0.01</slip1>
             <slip2>0.01</slip2>
           </ode>
         </friction>
         <contact>
           <ode>
-            <kp>1000000.0</kp>
+            <kp>10000000.0</kp>
             <kd>100.0</kd>
             <max_vel>1.0</max_vel>
             <min_depth>0.001</min_depth>
@@ -164,16 +275,16 @@
       <surface>
         <friction>
           <ode>
-            <mu>5.0</mu>
-            <mu2>0.0</mu2>
-            <fdir1 ignition:expressed_in="base_link">1 1 0</fdir1>
+            <mu>1.0</mu>
+            <mu2>0.2</mu2>
+            <fdir1 ignition:expressed_in="base_footprint">1 1 0</fdir1>
             <slip1>0.01</slip1>
             <slip2>0.01</slip2>
           </ode>
         </friction>
         <contact>
           <ode>
-            <kp>1000000.0</kp>
+            <kp>10000000.0</kp>
             <kd>100.0</kd>
             <max_vel>1.0</max_vel>
             <min_depth>0.001</min_depth>
@@ -188,16 +299,16 @@
       <surface>
         <friction>
           <ode>
-            <mu>5.0</mu>
-            <mu2>0.0</mu2>
-            <fdir1 ignition:expressed_in="base_link">1 1 0</fdir1>
+            <mu>1.0</mu>
+            <mu2>0.2</mu2>
+            <fdir1 ignition:expressed_in="base_footprint">1 1 0</fdir1>
             <slip1>0.01</slip1>
             <slip2>0.01</slip2>
           </ode>
         </friction>
         <contact>
           <ode>
-            <kp>1000000.0</kp>
+            <kp>10000000.0</kp>
             <kd>100.0</kd>
             <max_vel>1.0</max_vel>
             <min_depth>0.001</min_depth>
@@ -212,16 +323,16 @@
       <surface>
         <friction>
           <ode>
-            <mu>5.0</mu>
-            <mu2>0.0</mu2>
-            <fdir1 ignition:expressed_in="base_link">1 -1 0</fdir1>
+            <mu>1.0</mu>
+            <mu2>0.2</mu2>
+            <fdir1 ignition:expressed_in="base_footprint">1 -1 0</fdir1>
             <slip1>0.01</slip1>
             <slip2>0.01</slip2>
           </ode>
         </friction>
         <contact>
           <ode>
-            <kp>1000000.0</kp>
+            <kp>10000000.0</kp>
             <kd>100.0</kd>
             <max_vel>1.0</max_vel>
             <min_depth>0.001</min_depth>
@@ -231,6 +342,7 @@
     </collision>
   </gazebo>
 
+  <!-- Arm links 1-8 unchanged -->
   <link name="1">
     <inertial>
       <origin xyz="0.0117340449197307 0.173514174889526 -0.00193178496078945" rpy="0 0 0" />
@@ -446,6 +558,7 @@
     <child link="8" />
     <axis xyz="0.77811 0.37484 -0.50403" />
   </joint>
+
 </robot>
 <!--loaded the file-->
 <!--change the meshes to the correct ones and scaled them to match the previous ones-->
