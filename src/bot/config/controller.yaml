@@ -16,9 +16,14 @@ mecanum_drive_controller:
     kinematics:
       wheels_radius: 0.075
       sum_of_robot_center_projection_on_X_Y_axis: 0.49375
+      base_frame_offset:
+        x: 0.0
+        y: 0.0
+        theta: 0.0
     reference_timeout: 10.0
-    base_frame_id: "base_link"
+    base_frame_id: "base_footprint"
     odom_frame_id: "odom"
+    enable_odom_tf: true            # ← only this, NOT publish_odom_tf
     use_stamped_vel: false
-    publish_odom_tf: true
-    enable_odom_tf: true
+    pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+    twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]

@@ -14,6 +14,8 @@ def generate_launch_description():
     # Process Xacro
     xacro_file = os.path.join(get_package_share_directory(pkg_name), 'description', 'warehouse.urdf.xacro')
     robot_description_config = xacro.process_file(xacro_file).toxml()
+    ekf_config = os.path.join(get_package_share_directory(pkg_name),
+                              'config', 'ekf.yaml')
     
     # 1. Robot State Publisher
     node_robot_state_publisher = Node(
@@ -80,6 +82,13 @@ def generate_launch_description():
         arguments=["joint_state_broadcaster", "--controller-manager-timeout", "60"],
     )
 
+    # ekf_node = Node(
+    #     package='robot_localization',
+    #     executable='ekf_node',
+    #     name='ekf_filter_node',
+    #     output='screen',
+    #     parameters=[ekf_config, {'use_sim_time': True}],
+    # )
     mecanum_drive_controller_spawner = RegisterEventHandler(
         event_handler=OnProcessStart(
             target_action=joint_state_broadcaster_spawner,

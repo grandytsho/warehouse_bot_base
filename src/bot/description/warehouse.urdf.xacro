@@ -49,6 +49,10 @@
     <plugin filename="libign_ros2_control-system.so"
             name="ign_ros2_control::IgnitionROS2ControlPlugin">
       <parameters>$(find bot)/config/controller.yaml</parameters>
+      <ros>
+        <remapping>/mecanum_drive_controller/tf_odometry:=/tf</remapping>
+        <remapping>/mecanum_drive_controller/odometry:=/odom</remapping>
+      </ros>
     </plugin>
   </gazebo>
 
@@ -130,6 +134,44 @@
           <resolution>0.01</resolution>
         </range>
       </ray>
+    </sensor>
+  </gazebo>
+
+  <!-- IMU SENSOR -->
+  <link name="imu_link">
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.0000166" ixy="0" ixz="0"
+              iyy="0.0000166" iyz="0"
+              izz="0.0000166"/>
+    </inertial>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="imu_link">
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <topic>/imu/data</topic>
+      <ignition_frame_id>imu_link</ignition_frame_id>
+      <imu>
+        <angular_velocity>
+          <x><noise type="gaussian"><mean>0</mean><stddev>0.009</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0</mean><stddev>0.009</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0</mean><stddev>0.009</stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="gaussian"><mean>0</mean><stddev>0.021</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0</mean><stddev>0.021</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0</mean><stddev>0.021</stddev></noise></z>
+        </linear_acceleration>
+      </imu>
     </sensor>
   </gazebo>
 
@@ -564,3 +606,4 @@
 <!--change the meshes to the correct ones and scaled them to match the previous ones-->
 <!--fixed the axises-->
 <!--adding the direction of friction and changed the collision geometry to sperical insted of cylindrical-->
+<!--ros2 run teleop_twist_keyboard teleop_twist_keyboard -ros-args -r /cmd_vel:=/mecanum_drive_controller/reference_unstamped-->
